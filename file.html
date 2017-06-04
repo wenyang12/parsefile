@@ -1,0 +1,87 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>获取文件的所有名称并排序</title>
+    <script type="text/javascript" src="exif.js"></script>
+</head>
+<body>
+    <input type="file" id="file" multiple>
+    <div id="output"></div>
+    <script>
+        (function() {
+            var parseFile = {
+                init: function(){
+                   this.getDatas();
+                },
+                getDatas: function(){
+                    var self = this;
+                    var fileNode = document.getElementById('file');
+                    var results = [];
+                    var preUrl = 'static/images/';
+                    var time,name;
+                    fileNode.addEventListener('change', function(e){
+                        var files = e.target.files;
+                        for(var i = 0, len = files.length; i < len; i++){
+                            EXIF.getData(files[i], function() {
+                                // console.log(EXIF.pretty(this))
+                                time = EXIF.getTag(this, "DateTimeOriginal") || EXIF.getTag(this, "DateTime");
+                                if(!time || !time.split || !time.split(" ")[0]){
+                                    console.log(EXIF.pretty(this));
+                                }
+                                time = time && time.split && time.split(" ")[0] || "2088:12:01";
+                                time = time.replace(/:/g,"-");
+                                console.log(time);
+                                results.push({
+                                    time: time,
+                                    sortTime: time.replace(/-/g,""),
+                                    name: preUrl+this.name
+                                })
+                            });
+                        }
+                        setTimeout(function(){
+                            console.log(results.length+"张图");   
+                            return self.buildDatas(results);
+                        },files.length*500)
+                    })
+                },
+                getOnlyTime: function(datas){
+                    var results = [],
+                    obj ={};
+                    datas.forEach(function(item, index){
+                        if(!obj[item.time]){
+                            results.push(item.time);
+                            obj[item.time] = true;
+                        }
+                    });
+                    return results;
+                },
+
+                buildDatas: function(datas){
+                    var times = this.getOnlyTime(datas);
+                    var results = [];
+                    times.forEach(function(itema,index){
+                        results[index] = {};
+                        results[index].images = [];
+                        datas.forEach(function(itemb){
+                            if(itema === itemb.time){
+                                results[index].time = itemb.time;
+                                results[index].sortTime = itemb.sortTime;
+                                results[index].images.push(itemb.name)
+                            }
+                        })
+                    });
+                    results.sort(function(a,b){
+                        return b.sortTime - a.sortTime;
+                    })
+                    console.log(results);
+                    document.getElementById("output").innerHTML = JSON.stringify(results);
+                    return results;
+                }
+            }
+            parseFile.init();
+        })()
+    </script>
+</body>
+</html>
